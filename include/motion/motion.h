@@ -53,11 +53,24 @@
     float error[4];
     float output[4];
 
-    /* set the motion data */
+    /* set the motion data with velocity control
+        * @param data: pointer to motion data:
+        * @param data.vel_x: velocity x
+        * @param data.vel_y: velocity y
+        * @param data.vel_th: velocity theta
+        * @param data.acceleration: acceleration
+        * @param data.target_x: target x
+        * @param data.target_y: target y
+        * @param data.target_th: target theta
+        * @param ret: pointer to motion return:
+        * @param ret.vx: velocity x
+        * @param ret.vy: velocity y
+        * @param ret.vth: velocity theta
+    */
     void ManualMotion(motion_data_t *data, motion_return_t *ret);
 
     /* set the motion data with pid position control */
-    void PositionAngularMotion(motion_data_t *data, motion_return_t *ret, robot_data_t *robot_data);
+    void PositionAngularMotion(motion_data_t *data, motion_return_t *ret);
 
     /* Reset Motion */
     void ResetVelocity(motion_data_t *data, motion_return_t *ret);
