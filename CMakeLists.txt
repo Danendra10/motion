@@ -4,6 +4,7 @@ project(motion)
 find_package(catkin REQUIRED COMPONENTS
   goalkeeper
   roscpp
+  utils
 )
 
 catkin_package(
@@ -18,4 +19,4 @@ include_directories(
 add_library(${PROJECT_NAME}_lib 
   src/${PROJECT_NAME}.cpp
 )
-target_link_libraries(${PROJECT_NAME}_lib ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_lib ${catkin_LIBRARIES} utils_lib)

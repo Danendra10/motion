@@ -10,6 +10,7 @@
 // #include <vector>
 // #include <stdint.h>
 
+    extern int16_t pos_robot[3];
     typedef struct motion_data_tag
     {
         short int vel_x;
@@ -41,21 +42,6 @@
         uint8_t game_status;
     } robot_data_t;
 
-    typedef struct
-    {
-        uint8_t status;
-        float angle;
-        float distance;
-        float pos_x;
-        float pos_y;
-
-        struct
-        {
-            uint8_t status;
-            float pos_x;
-            float pos_y;
-        } detection[60];
-    } ObstacleDetection;
 
     /**
      * Variabels:
@@ -79,9 +65,5 @@
     float pythagoras(float x1, float y1, float x2, float y2);
 
     float RobotAngletoPoint(int16_t x, int16_t y, robot_data_t *robot_data);
-
-    //---Obstacle Avoidance
-    //=====================
-    ObstacleDetection ObstacleCheck(float theta, float theta_thresh, float dist, uint8_t _ignore_friend, robot_data_t *robot_data);
 
 #endif
