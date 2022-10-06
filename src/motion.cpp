@@ -87,6 +87,10 @@ ObstacleDetection ObstacleCheck(float theta, float theta_thresh, float dist, uin
 {
     ObstacleDetection obs_data;
 
+    static uint8_t obs_counter;
+    static uint8_t obs_start;
+    static uint8_t obs_final;
+
     obs_data.status = 0;
     obs_data.distance = dist;
 
@@ -106,44 +110,184 @@ ObstacleDetection ObstacleCheck(float theta, float theta_thresh, float dist, uin
     while (final_index > 59)
         final_index -= 60;
 
-    if(init_index > final_index)
+    std::vector<float> obs_dist;
+    std::vector<uint8_t> obs_index;
+
+    if (init_index > final_index)
     {
-        for(uint8_t i = init_index; i <= final_index; i++){
+        obs_counter = 0;
+        for (uint8_t i = init_index; i <= final_index; i++)
+        {
             /* Check if the obstacle is in the range of our dist thresh */
-            if(robot_data->obs_on_field[i] < dist)
+            if (robot_data->obs_on_field[i] < dist && i != final_index)
             {
                 obs_data.status = 1;
                 obs_data.angle = i * 6;
                 obs_data.distance = robot_data->obs_on_field[i];
                 obs_data.pos_x = robot_data->robot_x[robot_data->robot_num] + robot_data->obs_on_field[i] * cos(angles::from_degrees(i * 6));
                 obs_data.pos_y = robot_data->robot_y[robot_data->robot_num] + robot_data->obs_on_field[i] * sin(angles::from_degrees(i * 6));
+
+                obs_data.detection[i].status = 1;
+                obs_data.detection[i].pos_x = obs_data.pos_x;
+                obs_data.detection[i].pos_y = obs_data.pos_y;
+
+                obs_counter++;
+
+                if (obs_counter == 1)
+                    obs_start = i;
             }
-            
+            else
+            {
+                if (obs_counter >= 2)
+                {
+                    obs_final = i - 1;
+                    obs_data.status = 1;
+                    obs_data.angle = (obs_start + obs_final) * 6;
+
+                    obs_data.pos_x = 0;
+                    obs_data.pos_y = 0;
+
+                    for (uint8_t j = obs_start; j <= obs_final; j++)
+                    {
+                        obs_data.pos_x += obs_data.detection[j].pos_x;
+                        obs_data.pos_y += obs_data.detection[j].pos_y;
+                    }
+
+                    obs_data.pos_x /= (obs_final - obs_start);
+                    obs_data.pos_y /= (obs_final - obs_start);
+
+                    obs_data.pos_x += 25 * cosf(obs_data.angle * M_PI * 0.005555556);
+                    obs_data.pos_y += 25 * sinf(obs_data.angle * M_PI * 0.005555556);
+
+                    float buffer_obs_dist;
+
+                    buffer_obs_dist = pythagoras(robot_data->robot_x[robot_data->robot_num], robot_data->robot_y[robot_data->robot_num], obs_data.pos_x, obs_data.pos_y);
+
+                    obs_dist.push_back(buffer_obs_dist);
+                    obs_index.push_back((int)(obs_start + obs_final) * 0.5);
+                }
+                obs_counter = 0;
+            }
         }
     }
-    else if(init_index >= final_index)
+    else if (init_index > final_index)
     {
-        for(uint8_t i = 0; i <= final_index; i++){
-            if(robot_data->obs_on_field[i] < dist)
+        obs_counter = 0;
+        for (uint8_t i = init_index; i <= final_index; i++)
+        {
+            /* Check if the obstacle is in the range of our dist thresh */
+            if (robot_data->obs_on_field[i] < dist && i != final_index)
             {
                 obs_data.status = 1;
                 obs_data.angle = i * 6;
                 obs_data.distance = robot_data->obs_on_field[i];
                 obs_data.pos_x = robot_data->robot_x[robot_data->robot_num] + robot_data->obs_on_field[i] * cos(angles::from_degrees(i * 6));
                 obs_data.pos_y = robot_data->robot_y[robot_data->robot_num] + robot_data->obs_on_field[i] * sin(angles::from_degrees(i * 6));
-            }
-        }
 
-        for(uint8_t i = init_index; i <= 59; i++){
-            if(robot_data->obs_on_field[i] < dist)
+                obs_data.detection[i].status = 1;
+                obs_data.detection[i].pos_x = obs_data.pos_x;
+                obs_data.detection[i].pos_y = obs_data.pos_y;
+
+                obs_counter++;
+
+                if (obs_counter == 1)
+                    obs_start = i;
+            }
+            else
+            {
+                if (obs_counter >= 2)
+                {
+                    obs_final = i - 1;
+                    obs_data.status = 1;
+                    obs_data.angle = (obs_start + obs_final) * 6;
+
+                    obs_data.pos_x = 0;
+                    obs_data.pos_y = 0;
+
+                    for (uint8_t j = obs_start; j <= obs_final; j++)
+                    {
+                        obs_data.pos_x += obs_data.detection[j].pos_x;
+                        obs_data.pos_y += obs_data.detection[j].pos_y;
+                    }
+
+                    obs_data.pos_x /= (obs_final - obs_start);
+                    obs_data.pos_y /= (obs_final - obs_start);
+
+                    obs_data.pos_x += 25 * cosf(obs_data.angle * M_PI * 0.005555556);
+                    obs_data.pos_y += 25 * sinf(obs_data.angle * M_PI * 0.005555556);
+
+                    float buffer_obs_dist;
+
+                    buffer_obs_dist = pythagoras(robot_data->robot_x[robot_data->robot_num], robot_data->robot_y[robot_data->robot_num], obs_data.pos_x, obs_data.pos_y);
+
+                    obs_dist.push_back(buffer_obs_dist);
+                    obs_index.push_back((int)(obs_start + obs_final) * 0.5);
+                }
+                obs_counter = 0;
+            }
+            if (robot_data->obs_on_field[i] < dist && i == final_index)
+                obs_final = i;
+        }
+        for (uint8_t i = init_index; i <= 59; i++)
+        {
+            /* Check if the obstacle is in the range of our dist thresh */
+            if (robot_data->obs_on_field[i] < dist && i != 59)
             {
                 obs_data.status = 1;
                 obs_data.angle = i * 6;
                 obs_data.distance = robot_data->obs_on_field[i];
                 obs_data.pos_x = robot_data->robot_x[robot_data->robot_num] + robot_data->obs_on_field[i] * cos(angles::from_degrees(i * 6));
                 obs_data.pos_y = robot_data->robot_y[robot_data->robot_num] + robot_data->obs_on_field[i] * sin(angles::from_degrees(i * 6));
+
+                obs_data.detection[i].status = 1;
+                obs_data.detection[i].pos_x = obs_data.pos_x;
+                obs_data.detection[i].pos_y = obs_data.pos_y;
+
+                obs_counter++;
+
+                if (obs_counter == 1)
+                    obs_start = i;
             }
+            else
+            {
+                if (obs_counter >= 2)
+                {
+                    obs_final = i - 1;
+                    obs_data.status = 1;
+                    obs_data.angle = (obs_start + obs_final) * 6;
+
+                    obs_data.pos_x = 0;
+                    obs_data.pos_y = 0;
+
+                    for (uint8_t j = obs_start; j <= obs_final; j++)
+                    {
+                        obs_data.pos_x += obs_data.detection[j].pos_x;
+                        obs_data.pos_y += obs_data.detection[j].pos_y;
+                    }
+
+                    obs_data.pos_x /= (obs_final - obs_start);
+                    obs_data.pos_y /= (obs_final - obs_start);
+
+                    obs_data.pos_x += 25 * cosf(obs_data.angle * M_PI * 0.005555556);
+                    obs_data.pos_y += 25 * sinf(obs_data.angle * M_PI * 0.005555556);
+
+                    float buffer_obs_dist;
+
+                    buffer_obs_dist = pythagoras(robot_data->robot_x[robot_data->robot_num], robot_data->robot_y[robot_data->robot_num], obs_data.pos_x, obs_data.pos_y);
+
+                    obs_dist.push_back(buffer_obs_dist);
+                    obs_index.push_back((int)(obs_start + obs_final) * 0.5);
+                }
+                obs_counter = 0;
+            }
+            if (robot_data->obs_on_field[i] < dist && i == 59)
+                obs_final = i;
         }
+    }
+    /* Full Scan */
+    else if (init_index == final_index)
+    {
+        
     }
 
     return obs_data;
