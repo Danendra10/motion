@@ -8,10 +8,6 @@
 /* Acceleration control */
 void ManualMotion(motion_data_t *data, motion_return_t *ret)
 {
-    pos_robot[0] += data->vel_x;
-    pos_robot[1] += data->vel_y;
-    pos_robot[2] += data->vel_th;
-    ObstacleCheck(90, 80, 80);
     static float v_buffer[2];
 
     float delta_v[2];
@@ -34,46 +30,156 @@ void ManualMotion(motion_data_t *data, motion_return_t *ret)
     ret->vth = data->vel_th;
 }
 
-/* Position Control */
-void PositionAngularMotion(motion_data_t *data, motion_return_t *ret)
+void ManualMotionVector(uint16_t vx, uint16_t vy, int16_t angles_target, motion_return_t *ret)
 {
-    PID_t pid_posisi;
-    PID_t pid_sudut;
+    static PID_t angles_pid;
+    motion_data_t motion;
 
-    PIDInit(&pid_posisi, 0.1, 0.1, 0.1);
-    PIDInit(&pid_sudut, 0.1, 0.1, 0.1);
+    PIDInit(&angles_pid, 1, 0, 0);
 
-    /* Error Posisi X */
+    float angle_error = angles_target - pos_robot[2];
+
+    while (angle_error < -180)
+        angle_error += 360;
+    while (angle_error > 180)
+        angle_error -= 360;
+
+    float angle_output = PIDCalculate(&angles_pid, angle_error, 25);
+
+    float vector_output[2];
+
+    vector_output[0] = vx * sin(pos_robot[2] * DEG2RAD) - vy * cos(pos_robot[2] * DEG2RAD);
+    vector_output[1] = vx * cos(pos_robot[2] * DEG2RAD) + vy * sin(pos_robot[2] * DEG2RAD);
+
+    motion.vel_x = vector_output[0];
+    motion.vel_y = vector_output[1];
+    motion.vel_th = angle_output;
+    motion.acceleration = 3;
+    ManualMotion(&motion, ret);
+}
+
+void ManualMotionControl(motion_data_t *data, motion_return_t *ret)
+{
+}
+
+void ManualMotionPosition(int8_t _vx, int8_t _vy, int8_t _vth, motion_return_t *ret)
+{
+
+    motion_data_t motion_vector;
+    float vector_out[2];
+    vector_out[0] = _vx * sin(pos_robot[2] * DEG2RAD) - _vy * cos(pos_robot[2] * DEG2RAD);
+    vector_out[1] = _vx * cos(pos_robot[2] * DEG2RAD) + _vy * sin(pos_robot[2] * DEG2RAD);
+
+    motion_vector.vel_x = vector_out[0];
+    motion_vector.vel_y = vector_out[1];
+    motion_vector.vel_th = _vth;
+    // printf("Velocity datas: %f %f %f\n", motion_vector.vel_x, motion_vector.vel_y, motion_vector.vel_th);
+
+    ManualMotion(&motion_vector, ret);
+}
+
+/* Position Control */
+bool PositionAngularMotion(motion_data_t *data, motion_return_t *ret)
+{
+    PID_t position_pid;
+    PID_t angles_pid;
+
+    PIDInit(&position_pid, 0.65, 0, 0.4);
+    PIDInit(&angles_pid, 0.55, 0, 0);
+
+    /* Error Position X */
     error[0] = data->target_x - pos_robot[0];
 
-    /* Error Posisi Y */
+    /* Error Position Y */
     error[1] = data->target_y - pos_robot[1];
+
+    /* Error Position */
+    error[3] = sqrt(error[0] * error[0] + error[1] * error[1]);
 
     /* Error theta */
     error[2] = data->target_th - pos_robot[2];
+    while (error[2] < -180)
+        error[2] += 360;
+    while (error[2] > 180)
+        error[2] -= 360;
 
-    /* Error Posisi */
-    error[3] = sqrt(error[0] * error[0] + error[1] * error[1]);
+    /* Output Position */
+    output[3] = PIDCalculate(&position_pid, error[3], data->vel_position);
+    /* Output Theta */
+    output[2] = PIDCalculate(&angles_pid, error[2], data->vel_th);
 
-    while (error[3] < -180)
-        error[3] += 360;
-    while (error[3] > 180)
-        error[3] -= 360;
-
-    output[0] = PIDCalculate(&pid_posisi, error[3], 0.1);
-    output[1] = PIDCalculate(&pid_sudut, error[2], 0.1);
+    // printf("Output: %f %f\n", output[0], output[1]);
 
     /* Output vel X */
-    output[2] = output[0] * cos(atan2(error[0], error[1]));
-    output[3] = output[0] * sin(atan2(error[0], error[1]));
+    output[0] = output[3] * cos(atan2(error[1], error[0]));
+    output[1] = output[3] * sin(atan2(error[1], error[0]));
 
-    /**
-     * The vx, vy, and vth will be sent to decision maker
-     * And will be published to comm motor
-     */
-    ret->vx = output[2];
-    ret->vy = output[3];
-    ret->vth = output[1];
+    ManualMotionPosition(output[0], output[1], output[2], ret);
+
+    printf("vx: %d, vy: %d, vth: %d\n", ret->vx, ret->vy, ret->vth);
+
+    if (error[3] < 20 && fabs(error[2] < 9))
+    {
+        ROS_WARN("Position Reached");
+        return true;
+    }
+    else
+        return false;
+}
+
+bool MotionAroundPoint(motion_data_t *data, motion_return_t *ret)
+{
+    PID_t position_pid;
+    PID_t angles_pid;
+    PID_t arc_pid;
+
+    PIDInit(&position_pid, 0.45, 0, 0);
+    PIDInit(&angles_pid, 0.35, 0, 0);
+    PIDInit(&arc_pid, 0.35, 0, 0);
+
+    /* Error X Position */
+    error[0] = data->target_x - pos_robot[0];
+    /* Error Y Position */
+    error[1] = data->target_y - pos_robot[1];
+    /* Error Position */
+    error[3] = sqrt(error[0] * error[0] + error[1] * error[1]);
+    /* Error theta */
+    error[2] = data->target_th - pos_robot[2];
+    while (error[2] < -180)
+        error[2] += 360;
+    while (error[2] > 180)
+        error[2] -= 360;
+
+    float error_arc_angle = data->target_th - RobotAngletoPoint(data->target_x, data->target_y);
+    while (error_arc_angle < -180)
+        error_arc_angle += 360;
+    while (error_arc_angle > 180)
+        error_arc_angle -= 360;
+
+    float circumfence = 2 * M_PI * Pythagoras(data->target_x, data->target_y, pos_robot[0], pos_robot[1]);
+    /* Divided by 360 */
+    float arc_error = circumfence * error_arc_angle * 0.00277777777;
+
+    /* Output Position */
+    output[0] = PIDCalculate(&position_pid, error[3], data->vel_position);
+    /* Output Theta */
+    output[1] = PIDCalculate(&angles_pid, error[2], data->vel_th);
+    /* Output Arc */
+    output[2] = PIDCalculate(&arc_pid, arc_error, data->vel_position); 
+
+    output_buffer[0] = output[0] * cos(atan2(error[1], error[0])) + output[2] * cos(atan2(error[1], error[0]) + M_PI_2);
+    output_buffer[1] = output[0] * sin(atan2(error[1], error[0])) + output[2] * sin(atan2(error[1], error[0]) + M_PI_2);
+
+    ManualMotionPosition(output_buffer[0], output_buffer[1], output[1], ret);
+
+    if(fabs(error[3]) < 20 && fabs(error[2]) < 9 && fabs(arc_error) < 10)
+    {
+        ROS_WARN("Position Reached");
+        return true;
+    }
+    else
+        return false;
+
 }
 
 void ResetVelocity(motion_data_t *data, motion_return_t *ret)

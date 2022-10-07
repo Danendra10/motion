@@ -10,17 +10,26 @@
 // #include <vector>
 // #include <stdint.h>
 
-    extern int16_t pos_robot[3];
+    extern float pos_robot[3];
+
+
+    /**
+     * @var output[0] = vx
+     * @var output[1] = vy
+    */
+    float output_buffer[4];
     typedef struct motion_data_tag
     {
-        short int vel_x;
-        short int vel_y;
-        short int vel_th;
+        float vel_x;
+        float vel_y;
+        float vel_th;
+        short int vel_position;
         short int acceleration;
 
-        uint16_t target_x;
-        uint16_t target_y;
+        int16_t target_x;
+        int16_t target_y;
         int8_t target_th;
+        uint8_t distance_from_target;
     } motion_data_t;
 
     typedef struct motion_return_tag
@@ -69,8 +78,21 @@
     */
     void ManualMotion(motion_data_t *data, motion_return_t *ret);
 
+    void ManualMotionPosition(int8_t _vx, int8_t _vy, int8_t _vth, motion_return_t *ret);
+
+    void ManualMotionVector(uint16_t vx, uint16_t vy, int16_t angles_target, motion_return_t *ret);
+
     /* set the motion data with pid position control */
-    void PositionAngularMotion(motion_data_t *data, motion_return_t *ret);
+    bool PositionAngularMotion(motion_data_t *data, motion_return_t *ret);
+
+    /**
+     * @param data.target_y  y_point
+     * @param data.target_x  x_point
+     * @param data.distance_from_target  distance from target x and y
+    */
+    bool MotionAroundPoint(motion_data_t *data, motion_return_t *ret);
+
+    bool MotionAroundBall(motion_data_t *data, motion_return_t *ret);
 
     /* Reset Motion */
     void ResetVelocity(motion_data_t *data, motion_return_t *ret);
