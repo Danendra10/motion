@@ -11,6 +11,7 @@
 // #include <stdint.h>
 
     extern float pos_robot[3];
+    extern float ball_on_field[4]; 
 
 
     /**

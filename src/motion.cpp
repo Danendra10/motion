@@ -81,6 +81,7 @@ void ManualMotionPosition(int8_t _vx, int8_t _vy, int8_t _vth, motion_return_t *
 /* Position Control */
 bool PositionAngularMotion(motion_data_t *data, motion_return_t *ret)
 {
+    printf("%f %f %f %f\n", ball_on_field[0], ball_on_field[1], ball_on_field[2], ball_on_field[3]);
     PID_t position_pid;
     PID_t angles_pid;
 
