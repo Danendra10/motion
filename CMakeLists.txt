@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(motion)
 
-find_package(catkin REQUIRED COMPONENTS
-  goalkeeper
-  roscpp
+find_package(catkin REQUIRED COMPONENTS 
   utils
 )
 

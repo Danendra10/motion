@@ -1,9 +1,6 @@
 #include "utils/utils.h"
 #include "utils/pid.h"
 #include "motion/motion.h"
-// #include "motion/pid.h"
-#include <ros/ros.h>
-#include <angles/angles.h>
 
 /* Acceleration control */
 void ManualMotion(motion_data_t *data, motion_return_t *ret)
@@ -120,7 +117,7 @@ bool PositionAngularMotion(motion_data_t *data, motion_return_t *ret)
 
     if (error[3] < 20 && fabs(error[2] < 9))
     {
-        ROS_WARN("Position Reached");
+        printf("Position Reached");
         return true;
     }
     else
@@ -174,7 +171,7 @@ bool MotionAroundPoint(motion_data_t *data, motion_return_t *ret)
 
     if (fabs(error[3]) < 20 && fabs(error[2]) < 9 && fabs(arc_error) < 10)
     {
-        ROS_WARN("Position Reached");
+        printf("Position Reached");
         return true;
     }
     else
