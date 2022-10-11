@@ -11,7 +11,8 @@
 // #include <stdint.h>
 
     extern float pos_robot[3];
-    extern float ball_on_field[4]; 
+    extern float ball_on_field[4];
+    extern uint8_t ball_status;
 
 
     /**
@@ -93,6 +94,15 @@
     */
     bool MotionAroundPoint(motion_data_t *data, motion_return_t *ret);
 
+    /**
+     * @param data.target_y  y_ball
+     * @param data.target_x  x_ball
+     * @param data.distance_from_target  distance from ball
+     * @param data.target_th  angle from ball
+     * 
+     * @tparam data.vel_position  velocity position
+     * @tparam data.vel_th  velocity theta
+    */
     bool MotionAroundBall(motion_data_t *data, motion_return_t *ret);
 
     /* Reset Motion */

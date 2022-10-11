@@ -81,7 +81,6 @@ void ManualMotionPosition(int8_t _vx, int8_t _vy, int8_t _vth, motion_return_t *
 /* Position Control */
 bool PositionAngularMotion(motion_data_t *data, motion_return_t *ret)
 {
-    printf("%f %f %f %f\n", ball_on_field[0], ball_on_field[1], ball_on_field[2], ball_on_field[3]);
     PID_t position_pid;
     PID_t angles_pid;
 
@@ -166,21 +165,30 @@ bool MotionAroundPoint(motion_data_t *data, motion_return_t *ret)
     /* Output Theta */
     output[1] = PIDCalculate(&angles_pid, error[2], data->vel_th);
     /* Output Arc */
-    output[2] = PIDCalculate(&arc_pid, arc_error, data->vel_position); 
+    output[2] = PIDCalculate(&arc_pid, arc_error, data->vel_position);
 
     output_buffer[0] = output[0] * cos(atan2(error[1], error[0])) + output[2] * cos(atan2(error[1], error[0]) + M_PI_2);
     output_buffer[1] = output[0] * sin(atan2(error[1], error[0])) + output[2] * sin(atan2(error[1], error[0]) + M_PI_2);
 
     ManualMotionPosition(output_buffer[0], output_buffer[1], output[1], ret);
 
-    if(fabs(error[3]) < 20 && fabs(error[2]) < 9 && fabs(arc_error) < 10)
+    if (fabs(error[3]) < 20 && fabs(error[2]) < 9 && fabs(arc_error) < 10)
     {
         ROS_WARN("Position Reached");
         return true;
     }
     else
         return false;
+}
 
+bool MotionAroundBall(motion_data_t *data, motion_return_t *ret)
+{
+    data->target_x = ball_on_field[0];
+    data->target_y = ball_on_field[1];
+    if (ball_status)    
+        return MotionAroundPoint(data, ret);
+
+    return false;
 }
 
 void ResetVelocity(motion_data_t *data, motion_return_t *ret)
