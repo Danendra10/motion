@@ -6,13 +6,17 @@
 void ManualMotion(motion_data_t *data, motion_return_t *ret)
 {
     static float v_buffer[2];
+    // printf("Motion: %f %f %f\n", data->vel_x, data->vel_y, data->vel_th);
 
     float delta_v[2];
     delta_v[0] = data->vel_x - v_buffer[0];
     delta_v[1] = data->vel_y - v_buffer[1];
 
+
     float r = sqrt(delta_v[0] * delta_v[0] + delta_v[1] * delta_v[1]);
     float theta = atan2(delta_v[1], delta_v[0]);
+
+
 
     if (r > data->acceleration)
         r = data->acceleration;

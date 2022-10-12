@@ -15,6 +15,7 @@ extern uint8_t ball_status;
  * @var output[1] = vy
  */
 float output_buffer[4];
+
 typedef struct motion_data_tag
 {
     float vel_x;
@@ -47,6 +48,10 @@ typedef struct robot_data_tag
     int8_t obs_on_field[60];
     uint8_t game_status;
 } robot_data_t;
+
+
+motion_data_t motion_data;
+motion_return_t motion_return;
 
 /**
  * Variabels:
